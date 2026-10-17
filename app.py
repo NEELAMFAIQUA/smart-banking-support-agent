@@ -1,6 +1,6 @@
 import streamlit as st
 
-from assistant import answer
+from assistant import answer, route_to_specialist
 
 st.set_page_config(page_title="Banking Support Guide", page_icon="🏦")
 st.title("Banking Support Guide")
@@ -8,7 +8,7 @@ st.warning(
     "General education only—not personalized financial advice. "
     "No account access or transactions. Never enter account credentials or codes."
 )
-st.caption("Answers are retrieved from the bundled FAQ; no external service is used.")
+st.caption("A local triage flow routes the topic to an educational support specialist.")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -21,6 +21,8 @@ if question:
     st.session_state.messages.append({"role": "user", "content": question})
     with st.chat_message("user"):
         st.markdown(question)
+    route = route_to_specialist(question.lower())
+    st.caption(f"Routed to: {route['name']}")
     response, references = answer(question)
     with st.chat_message("assistant"):
         st.markdown(response)

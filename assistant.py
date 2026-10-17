@@ -32,9 +32,40 @@ def retrieve(question, limit=3):
 
 
 def answer(question):
+    normalized = question.lower()
+    if any(term in normalized for term in ("password", "pin", "one-time code", "otp")):
+        return (
+            "For your safety, never share passwords, PINs, or one-time codes here. "
+            "If you disclosed one, contact your bank using its official number or app.",
+            [],
+        )
+
+    specialist = route_to_specialist(normalized)
     matches = retrieve(question)
     if not matches:
-        return "I couldn't find that topic in this demo FAQ. Contact your bank through its official channels for account-specific help.", []
+        return (
+            f"{specialist['greeting']} I couldn't find that topic in this demo FAQ. "
+            "Contact your bank through its official channels for account-specific help.",
+            [],
+        )
     return "\n\n".join(
-        f"**{article['title']}**\n{article['text']}" for article in matches[:2]
+        f"**{specialist['name']} · {article['title']}**\n{article['text']}"
+        for article in matches[:2]
     ), matches
+
+
+_SPECIALISTS = [
+    (("fraud", "suspicious", "scam", "stolen"), "Fraud safety", "Fraud support"),
+    (("card", "debit", "credit", "atm"), "Card support", "Card support"),
+    (("transfer", "payment", "transaction", "deposit"), "Payments support", "Payments support"),
+    (("loan", "interest", "apr", "credit report"), "Borrowing support", "Borrowing support"),
+    (("checking", "savings", "account"), "Account education", "Account guide"),
+]
+
+
+def route_to_specialist(question):
+    """Choose a local specialist by intent; does not access bank systems."""
+    for keywords, name, greeting in _SPECIALISTS:
+        if any(keyword in question for keyword in keywords):
+            return {"name": name, "greeting": greeting}
+    return {"name": "General support", "greeting": "General support"}
